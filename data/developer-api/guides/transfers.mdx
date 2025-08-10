@@ -1,0 +1,62 @@
+---
+title: Transfers
+priority: 4
+---
+
+The Transfers API is designed to provide clear visibility into wire transfer payments, especially for paying down card statement balances. Transfers may include debits (pulling funds from one account) and credits (depositing funds into another), and they can be subject to various stages of processing before completion. Transfers typically go through the ODFI (Originating Depository Financial Institution), which sends requests to the RDFI (Receiving Depository Financial Institution), often with intermediary steps like routing through the Federal Reserve (Fed).
+
+## Use Cases
+
+Provide visibility into the status of wire transfers used to pay down card statement balances.
+
+Retrieve detailed records of past wire transactions, including status changes and reconciliation timestamps. This enables easy reporting and simplifies reconciling Ramp card payments within broader accounting records.
+
+## Transfer Statuses
+
+ **CANCELED**\
+  *The transfer has been canceled and will not be processed.*\
+  This state is terminal and indicates the transfer was intentionally stopped, either by the customer or due to an operational decision.
+
+ **COMPLETED**\
+  *The transfer has successfully settled and reached its final state.*\
+  Funds have moved as intended, and no further actions are required. Any subsequent issues would require a new transfer or reversal process.
+
+ **ERROR**\
+  *The transfer encountered a terminal error and could not be completed.*\
+  This can happen due to issues like invalid account information or system errors. The transfer will need to be retried with corrected details.
+
+ **INITIATED**\
+  *A record of the transfer has been created in Ramp’s system.*\
+  The process of moving funds has started, but no external actions have been taken yet.
+
+ **NOT_ACKED**\
+  *Ramp did not receive an acknowledgment from the bank after submitting the transfer.*\
+  The transfer may need to be retried or investigated for connectivity issues with the bank.
+
+ **NOT_ENOUGH_FUNDS**\
+  *The transfer could not proceed due to insufficient funds in the originating account.*\
+  Additional funds need to be added to the account before re-attempting the transfer.
+
+ **PROCESSING_BY_ODFI**\
+  *The transfer file has been submitted to the Originating Bank (ODFI), and the cutoff time for same-day processing has passed.*\
+  The ODFI has accepted the file and will proceed with sending it to the Fed.
+
+ **REJECTED_BY_ODFI**\
+  *The transfer was rejected by the ODFI before it was sent to the Federal Reserve.*\
+  The rejection usually occurs due to formatting errors or invalid account information in the transfer file.
+
+ **RETURNED_BY_RDFI**\
+  *The transfer failed at the Receiving Bank (RDFI) due to an issue provided by the receiving bank.*\
+  Common reasons include closed accounts or incorrect account numbers. This requires corrective action to resolve.
+
+ **SUBMITTED_TO_FED**\
+  *The transfer file has been sent to the Federal Reserve and is awaiting routing to the RDFI.*\
+  The transfer is now in the Fed’s hands and will soon be sent to the receiving bank.
+
+ **SUBMITTED_TO_RDFI**\
+  *The transfer has been delivered to the Receiving Bank (RDFI), and we are awaiting the final transfer of funds.*\
+  This is the final step before the funds are made available to the receiving party.
+
+ **UNNECESSARY**\
+  *The transfer is for $0 and does not require processing through the ACH system.*\
+  This is a terminal state, indicating no further actions are required.

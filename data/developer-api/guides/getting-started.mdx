@@ -1,0 +1,359 @@
+---
+title: Getting Started
+priority: 0
+---
+
+import { MDXCodeBlocks } from '~/src/components/MDXCodeBlocks'
+import { RyuNotice, RyuImage, RyuBadge } from '@ramp/ryu'
+import oauth_diagram from '~/src/assets/oauth_diagram.png'
+import auth_code_prompt from '~/src/assets/auth_code_prompt.png'
+
+This guide walks you through making your first API call with Ramp. We'll use the **Client Credentials** flow, which is perfect for internal integrations and getting started quickly.
+
+For a comprehensive overview of Ramp's authorization system, scopes, and security model, see our [Authorization Guide](/developer-api/v1/authorization).
+
+---
+
+## Understanding environments
+
+Ramp offers two environments:
+
+| Environment | Base URL | Description |
+|------------|----------|-------------|
+| Sandbox | `https://demo-api.ramp.com` | For testing and development. Contains demo data. Apps created here only work in this environment. |
+| Production | `https://api.ramp.com` | For live use. Interacts with your real Ramp account. Use only after testing in Sandbox. |
+
+If you need access to the Sandbox:
+- **Ramp Customers**: Contact your account manager.
+- **Partners**: Follow our [Build with Ramp](/developer-api/v1/build-with-ramp) guide.
+
+---
+
+## Quickstart: Authorize with Client Credentials
+
+This is the easiest way to get started with the Ramp API.
+
+<RyuNotice intent="warning" title="Permission Required">
+API access requires **ADMIN** or **IT_ADMIN** role. If you don't see "Developer API" in your Ramp account or get permission errors, contact your Ramp administrator to upgrade your permissions. Managers and regular users cannot create apps or generate tokens.
+</RyuNotice>
+
+### 1. Create a Developer App
+
+1. Press **CMD + K** and select **Developer API** in your Ramp account (or Sandbox).
+2. Click **Create New App**.
+3. Name your app, accept the Terms, and click **Create**.
+4. Under **Grant types**, click **Add new grant type** → select **Client Credentials**.
+5. Under **Scopes**, click **Configure allowed scopes** and select `transactions:read` (or others as needed).
+6. Copy your **Client ID** and **Client Secret**. These will be used in your token request.
+
+### 2. Request an Access Token
+
+You’ll authenticate with your Client ID and Secret to get a token:
+
+- `Authorization Header`: This contains the Client ID and Client Secret, encoded in base64. The format is Authorization: Basic `<base64(client_id:client_secret)>`.
+- `Content-Type`: `application/x-www-form-urlencoded`
+- `grant_type`: `client_credentials`
+- `scope`: space-separated list of scopes (e.g., `transactions:read`)
+
+<MDXCodeBlocks title="Requesting a token">
+```bash
+curl --location --request POST '{environment-url}/developer/v1/token' \
+  --header "Authorization: Basic $(echo -n \"$CLIENT_ID:$CLIENT_SECRET\" | base64)" \
+  --header "Content-Type: application/x-www-form-urlencoded" \
+  --data "grant_type=client_credentials" \
+  --data "scope=transactions:read"
+```
+```js
+const endpoint = '{environment-url}/developer/v1/token'
+const clientId = process.env.CLIENT_ID
+const clientSecret = process.env.CLIENT_SECRET
+
+const headers = {
+  'Authorization': `Basic ${btoa(`${clientId}:${clientSecret}`)}`,
+  'Content-Type': 'application/x-www-form-urlencoded',
+}
+
+const body = new URLSearchParams({
+  grant_type: 'client_credentials',
+  scope: 'transactions:read'
+})
+
+fetch(endpoint, { method: 'POST', headers, body })
+  .then(res => res.json())
+  .then(console.log)
+```
+```python
+import os, base64, requests
+
+client_id = os.getenv("CLIENT_ID")
+client_secret = os.getenv("CLIENT_SECRET")
+
+auth = base64.b64encode(f"{client_id}:{client_secret}".encode()).decode()
+
+headers = {
+  "Authorization": f"Basic {auth}",
+  "Content-Type": "application/x-www-form-urlencoded"
+}
+
+data = {
+  "grant_type": "client_credentials",
+  "scope": "transactions:read"
+}
+
+resp = requests.post("{environment-url}/developer/v1/token", headers=headers, data=data)
+print(resp.json())
+```
+</MDXCodeBlocks>
+
+If successful, you’ll receive a response like this:
+
+```json
+{
+  "access_token": "ramp_tok_abc123...",
+  "token_type": "bearer",
+  "expires_in": 864000,
+  "scope": "transactions:read"
+}
+```
+
+Copy the `access_token` – you’ll use it to authenticate your API calls.
+
+:::warning[Token security]
+Access and refresh tokens should never be transmitted or stored without encryption.
+:::
+
+### 3. Make an API Call
+
+Use the `access_token` from the previous step in the `Authorization` header:
+
+<MDXCodeBlocks title="Retrieving transactions">
+```bash
+curl --request GET '{environment-url}/developer/v1/transactions' \
+  --header "Authorization: Bearer $RAMP_API_TOKEN" \
+  --header "Accept: application/json"
+```
+```js
+fetch('{environment-url}/developer/v1/transactions', {
+  headers: {
+    'Authorization': `Bearer ${accessToken}`,
+    'Accept': 'application/json'
+  }
+})
+  .then(res => res.json())
+  .then(console.log)
+```
+```python
+headers = {
+  "Authorization": f"Bearer {access_token}",
+  "Accept": "application/json"
+}
+response = requests.get("{environment-url}/developer/v1/transactions", headers=headers)
+print(response.json())
+```
+</MDXCodeBlocks>
+
+## FAQ: Client credentials flow
+
+:::warning[Questions? Contact us at developer-support@ramp.com]
+:::
+
+#### Why is my token request failing?
+- Ensure the grant type is enabled in the Developer App settings.
+- Double check `scope` is included and matches allowed scopes.
+- Confirm base64 encoding is correctly applied.
+- Make sure you're using the right URL for Sandbox or Production.
+
+---
+
+#### My API call returns 401 – what gives?
+- Your token might be expired.
+- Ensure you're using `Authorization: Bearer <access_token>`.
+- Make sure the token matches the environment you're calling.
+
+---
+
+#### How long do tokens last?
+- Client Credentials tokens expire after ~10 days (864000 seconds).
+- You can always request a new one using the same client credentials.
+
+---
+
+#### Can I rotate credentials?
+- Yes. You can regenerate your client secret from the Developer App settings.
+
+---
+
+## Authorization code: For multi-customer apps
+
+Use this if you're building a public integration or need users to explicitly grant access to their Ramp accounts. This flow is required for third-party applications acting on behalf of other businesses (e.g. apps listed in the Ramp App Center).
+
+<RyuImage src={oauth_diagram} />
+
+### Step 1: User is redirected to Ramp authorization URL
+
+There are five required parameters in this request:
+
+* `response_type` <RyuBadge size='s' color='empty'>Required</RyuBadge> — Must be set to `code`.
+* `scope` <RyuBadge size='s' color='empty'>Required</RyuBadge> — Space-separated list of scopes (e.g., `transactions:read business:read`).
+* `client_id` <RyuBadge size='s' color='empty'>Required</RyuBadge> — Your app’s client ID from the [Ramp Developer Console](https://app.ramp.com/settings/ramp-developer).
+* `redirect_uri` <RyuBadge size='s' color='empty'>Required</RyuBadge> — Must match exactly one of the URIs configured in your app.
+* `state` <RyuBadge size='s' color='empty'>Required</RyuBadge> — Protects against CSRF; should be unique and verifiable by your app.
+
+Example URL:
+
+```
+https://app.ramp.com/v1/authorize?response_type=code&client_id=YOUR_CLIENT_ID&redirect_uri=https://yourapp.com/callback&scope=transactions:read business:read&state=random_csrf_token
+```
+
+Your application must direct the user to Ramp’s OAuth authorization endpoint. This initiates the flow by asking the user to log in and approve your app.
+
+### Step 2: User authenticates and approves access
+:::warning[Admin consent required]
+Only users with Admin or Business Owner roles can authorize third-party applications. If a user with insufficient permissions attempts to authorize your app, they will receive a "Business not authorized to use this application" error.
+:::
+
+The user logs in to Ramp and is shown a screen prompting them to approve your app's requested access.
+
+<RyuImage position='center' width='300px' src={auth_code_prompt} />
+
+<br></br>
+
+Upon approval, Ramp redirects to your `redirect_uri` with a temporary `code` and the original `state`:
+```
+https://yourapp.com/callback?code=AUTH_CODE_HERE&state=random_csrf_token
+```
+
+Extract the `code` from the URL to proceed to token exchange.
+
+### Step 3: Exchange the `code` for an access token
+
+<MDXCodeBlocks title="Exchange code for access token">
+```bash
+curl --location --request POST '{environment-url}/developer/v1/token' \
+  --header "Authorization: Basic $(echo -n \"$CLIENT_ID:$CLIENT_SECRET\" | base64)" \
+  --header "Content-Type: application/x-www-form-urlencoded" \
+  --data-urlencode "grant_type=authorization_code" \
+  --data-urlencode "code=AUTH_CODE_HERE" \
+  --data-urlencode "redirect_uri=https://yourapp.com/callback"
+```
+```js
+const tokenUrl = '{environment-url}/developer/v1/token'
+const auth = btoa(`${clientId}:${clientSecret}`)
+const params = new URLSearchParams({
+  grant_type: 'authorization_code',
+  code: 'AUTH_CODE_HERE',
+  redirect_uri: 'https://yourapp.com/callback'
+})
+
+fetch(tokenUrl, {
+  method: 'POST',
+  headers: {
+    'Authorization': `Basic ${auth}`,
+    'Content-Type': 'application/x-www-form-urlencoded'
+  },
+  body: params
+})
+  .then(res => res.json())
+  .then(console.log)
+```
+```python
+headers = {
+  "Authorization": f"Basic {auth}",
+  "Content-Type": "application/x-www-form-urlencoded"
+}
+
+data = {
+  "grant_type": "authorization_code",
+  "code": "AUTH_CODE_HERE",
+  "redirect_uri": "https://yourapp.com/callback"
+}
+
+resp = requests.post("{environment-url}/developer/v1/token", headers=headers, data=data)
+print(resp.json())
+```
+</MDXCodeBlocks>
+
+### Step 4: Refresh the access token
+
+Tokens expire. Use the refresh token to obtain a new access token:
+
+<MDXCodeBlocks title="Refreshing access token">
+```bash
+curl --location --request POST '{environment-url}/developer/v1/token' \
+  --header 'Authorization: Basic $(echo -n "$CLIENT_ID:$CLIENT_SECRET" | base64)' \
+  --header 'Content-Type: application/x-www-form-urlencoded' \
+  --data-urlencode 'grant_type=refresh_token' \
+  --data-urlencode 'refresh_token=REFRESH_TOKEN_HERE'
+```
+```js
+const tokenUrl = '{environment-url}/developer/v1/token'
+const auth = btoa(`${clientId}:${clientSecret}`)
+
+const params = new URLSearchParams({
+  grant_type: 'refresh_token',
+  refresh_token: 'REFRESH_TOKEN_HERE'
+})
+
+fetch(tokenUrl, {
+  method: 'POST',
+  headers: {
+    'Authorization': `Basic ${auth}`,
+    'Content-Type': 'application/x-www-form-urlencoded'
+  },
+  body: params
+})
+  .then(res => res.json())
+  .then(console.log)
+```
+```python
+headers = {
+  "Authorization": f"Basic {auth}",
+  "Content-Type": "application/x-www-form-urlencoded"
+}
+
+data = {
+  "grant_type": "refresh_token",
+  "refresh_token": "REFRESH_TOKEN_HERE"
+}
+
+resp = requests.post("{environment-url}/developer/v1/token", headers=headers, data=data)
+print(resp.json())
+```
+</MDXCodeBlocks>
+
+## FAQ: Authorization code flow
+
+:::warning[Questions? Contact us at developer-support@ramp.com]
+:::
+
+#### My customer gets "Business not authorized to use this application" - what's wrong?
+- Only users with Admin or Business Owner roles can authorize third-party applications
+- Ask your customer to have an Admin or Business Owner complete the authorization flow
+- Regular users cannot grant OAuth2 permissions for security reasons
+
+---
+
+#### How do I know if my customer has the right permissions?
+- The customer should verify their role in Settings > Team
+- Admin and Business Owner roles are clearly labeled in the Ramp UI
+- If uncertain, they should contact their Ramp administrator
+
+---
+
+## Next steps
+
+Now that you can authenticate and make API calls, explore common use cases:
+
+- **[Webhooks Guide](/developer-api/v1/webhooks)** - Get real-time notifications instead of polling
+- **[Accounting Integration Guide](/developer-api/v1/guides/accounting)** - Connect your ERP or accounting system  
+- **[Bill Pay Guide](/developer-api/v1/guides/bill-pay)** - Automate accounts payable workflows
+- **[All Developer Guides](/developer-api/v1/guides/)** - Browse all integration guides and tutorials
+
+### Reference Documentation
+
+- **[Authorization Guide](/developer-api/v1/authorization)** - Complete OAuth 2.0 reference with scopes and security
+- **[Rate Limiting](/developer-api/v1/rate-limiting)** - Avoid hitting API limits
+- **[Error Handling](/developer-api/v1/error-handling)** - Handle API errors gracefully
+- **[API Changelog](/developer-api/v1/changelog)** - Stay updated on API changes
+
+If you get stuck, email [developer-support@ramp.com](mailto:developer-support@ramp.com) – we're here to help.

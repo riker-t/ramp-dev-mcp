@@ -1,0 +1,310 @@
+---
+title: Bill Pay
+priority: 2
+---
+
+import { RyuNotice, RyuImage, RyuBreak } from '@ramp/ryu'
+import bill_pay_flow from '~/src/assets/bill-pay-flow.png'
+
+
+
+## Overview
+
+Ramp's Bill Pay API enables you to automate your accounts payable workflow - from vendor management to bill processing and payments. Whether you're integrating with existing ERP systems, automating routine bill processing, or monitoring bill status, this API provides the building blocks you need.
+
+**Common use cases:**
+- **ERP Integration**: Sync bills and payments between Ramp and your accounting system
+- **Bill Processing Automation**: Programmatically create bills that are automatically approved for payment
+- **Vendor Management**: Programmatically create and maintain vendor relationships
+- **Payment Processing**: Automate bill payments via card, ACH, check, or wire transfer
+- **Financial Reporting**: Extract bill and payment data for custom reporting and analytics
+- **Approval Monitoring**: Track draft bills awaiting manual review and approval
+
+**Before you start:** Familiarize yourself with [Ramp Bill Pay basics](https://support.ramp.com/hc/en-us/sections/4417834277907-Bill-Pay) in our Help Center.
+
+> Use webhooks to receive real-time notifications when bills are created, approved, rejected, or paid. See our [Webhooks Guide](/developer-api/v1/webhooks) for setup instructions.
+
+The following endpoints are publicly available:
+
+- Vendors: GET Vendor by ID, GET Vendors (List), POST Vendors, PATCH Vendors, DELETE Vendor
+- Vendor Contacts: GET Vendor Contacts by ID, GET Vendor Contacts
+- Vendor Accounts: GET Vendor Accounts by ID, GET Vendor Accounts
+- Bills: POST Bills, PATCH Bills, DELETE Bills, GET Bills
+- Draft Bills: GET Draft Bills (List), GET Draft Bill by ID
+
+### Current API Limitations
+
+**Approval Process Management:**
+- You cannot trigger or manage bill approvals through the API
+- You can fetch bills in draft mode (awaiting approval) and create fully approved bills
+- You cannot mark a draft bill as approved or configure approval process logic via API
+- Bills created via API are automatically approved and skip the approval workflow
+
+**Payment Management:**
+- Payments are nested within bills and do not have their own dedicated endpoints
+- Payments can be created alongside bills, but have limited support for updates once created
+- Batch payments (creating a single payment for multiple bills) are not supported
+
+**Document and File Management:**
+- OCR upload for draft bills is not currently supported via API
+- Adding attachments to bills and draft bills is not currently supported
+- Images of invoices cannot be attached through the API
+
+**Other Limitations:**
+- Draft bills can be read but not created or modified via API (created only through invoice upload)
+- Managing bank accounts in the API is not supported
+
+## Relevant Endpoints
+
+| **Endpoints**                                                  | **Use**                                                                                                                                 | **Relevant Scopes**                   |
+|----------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------|
+| [Bills](/developer-api/v1/api/bills)                           | Manage bills and payments to vendors.                                                                                                   | `bills:read`, `bills:write`           |
+| [Draft Bills](/developer-api/v1/api/bills#tag/Bill/operation/#get-developer-v1-bills-drafts) | Read draft bills that are awaiting verification before approval. | `bills:read` |
+| [ Vendors ](/developer-api/v1/api/vendors)                     | Manage the individuals or institutions which are eligible to receive payments. View contact information and accounts related to vendor. | `vendors:read`, `vendors:write`       |
+| [Accounting Vendors](/developer-api/v1/api/accounting-vendors) | Establish a connection between a Vendor and an Accounting Vendor so that vendors can be used when coding bills for accounting purposes. | `accounting:read`, `accounting:write` |
+| [Users](/developer-api/v1/api/users)                           | Manage the employees who may act as the owners for vendor records.                                                                      | `users:read`, `users:write`           |
+| [ Entities ](/developer-api/v1/api/entities)                   | View entities in business, including relevant bill pay bank accounts.                                                                   | `entities:read`                       |
+
+## Bill Lifecycle and Draft Bills
+
+Understanding the complete bill lifecycle is essential for effective integration with Ramp's Bill Pay API.
+
+### Two Paths to Bill Creation
+
+**1. API-Created Bills (Programmatic)**
+- Created directly via `POST /developer/v1/bills`
+- Automatically approved and skip the draft phase
+- Ideal for automated bill processing and integrations
+- Require complete bill data upfront
+
+**2. Invoice Upload Bills (Manual Review)**
+- Created when invoices are uploaded via email forwarding, manual upload, or bulk import
+- Start as **Draft Bills** requiring human verification
+- Processed through OCR to extract vendor info, amounts, and line items
+- Must be manually reviewed and submitted for approval
+
+### Draft Bills Explained
+
+Draft bills represent the intermediate state between invoice upload and approval:
+
+```
+Invoice Upload → OCR Processing → Draft Bill → Manual Review → Approved Bill → Payment
+```
+
+**Key characteristics of draft bills:**
+- **Read-only via API**: Can be retrieved but not created or modified
+- **OCR-generated data**: Vendor information and amounts extracted automatically
+- **Require verification**: Humans must validate the extracted data
+- **Temporary state**: Move to approval workflow once verified
+
+**When to use Draft Bills API:**
+- Monitor bills awaiting review in your dashboard integrations
+- Track pending bills in your reporting systems
+- Generate reports on bill processing pipeline status
+
+**Code Example - Listing Draft Bills:**
+```javascript
+// Get all draft bills awaiting review
+const response = await fetch('/developer/v1/bills/drafts', {
+  headers: {
+    'Authorization': 'Bearer YOUR_ACCESS_TOKEN'
+  }
+});
+const draftBills = await response.json();
+```
+
+### Bill States Overview
+
+| State | Description | API Access |
+|-------|-------------|------------|
+| **Draft** | Awaiting manual verification after OCR processing | Read-only |
+| **Approved** | Verified and ready for payment | Full CRUD |
+| **Paid** | Payment has been processed | Read/Update |
+| **Archived** | Removed from active workflow | Read-only |
+
+## Vendor Management
+
+- **Vendor**: A vendor in Ramp represents a business or individual that provides goods or services to your company. Vendors act as recipients for payments and are required for bill creation and reconciliation.
+- **Vendor Owner**: A Vendor owner is a Ramp user who is responsible for maintaining relationships with, and often payments to, a particular vendor. An employee who manages your Facebook Ads spend, for example, would be a suitable Vendor owner of Facebook Ads. 
+
+The Bills API uses information from the Users and Vendors endpoints. A high-level flow for creating a new bill might look like:
+
+<RyuBreak />
+<RyuImage width='600px' src={bill_pay_flow}/>
+<RyuBreak />
+
+
+### Vendors and Accounting Vendors
+
+The Vendor object in the Ramp API is not the same as the Accounting Vendor object. Vendors can be used for bill payments, while Accounting Vendors are used in accounting workflows.
+
+You can establish a connection between an Accounting Vendor and a Vendor by including the `accounting_vendor_remote_id` or `vendor_tracking_category_option_id`; if not passed, a new accounting field option will be created matching the Vendor name.
+
+## Bills and Payments
+
+### Creating a Bill
+
+Here's a complete example of creating a bill with payment:
+
+```javascript
+// Create a new bill with ACH payment
+const billData = {
+  vendor_id: "vendor-uuid-here",
+  invoice_number: "INV-2024-001",
+  amount: {
+    amount: 150000, // $1,500.00 in cents
+    currency_code: "USD"
+  },
+  due_at: "2024-12-31T00:00:00Z",
+  issued_at: "2024-11-15T00:00:00Z",
+  entity_id: "entity-uuid-here",
+  memo: "Monthly software subscription",
+  line_items: [{
+    amount: {
+      amount: 150000,
+      currency_code: "USD"
+    },
+    memo: "Software License - November 2024",
+    accounting_field_selections: [{
+      field_external_id: "gl_account",
+      field_option_external_id: "software_expense"
+    }]
+  }],
+  payment: {
+    payment_method: "ACH",
+    payment_arrival_date: "2024-12-31",
+    bank_account_id: "bank-account-uuid"
+  }
+};
+
+const response = await fetch('/developer/v1/bills', {
+  method: 'POST',
+  headers: {
+    'Authorization': 'Bearer YOUR_ACCESS_TOKEN',
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify(billData)
+});
+
+const bill = await response.json();
+console.log('Bill created:', bill.id);
+```
+
+### Payment Methods
+
+### Pay by Card
+
+Paying by Ramp Card allows you to earn cashback on bill payments. Three options are available: 
+
+- **Pay by One-Time-Card Delivery** allows a virtual card to be issued and delivered to the primary Vendor Contact’s email. Vendors will receive payments on the due_date specified on the Bill object.
+- **Pay By One-Time-Card** issues a virtual card for use on bill payments. This new spend limit may be managed through the existing [Limits API](/developer-api/v1/api/limits), matching 
+- **Pay by Existing Ramp Card** allows you to match a limit to the bill. If this bill was already paid, match the corresponding transaction. If not, Ramp will attempt to auto-match a future transaction to the bill.
+
+If you want to filter out transactions paid on a one-time card when using the [Transactions API](/developer-api/v1/api/transactions), set the query parameter `has_no_sync_commit=True`.
+
+### Other payment methods 
+
+Bills may also be paid via Check, ACH, Wire, SWIFT, or International payment methods. Expedited ACH and Wire payments are currently unavailable in the API.
+
+- Payments are scheduled to arrive to the vendor by `payment_arrival_date`. 
+  - The requested arrival date may not be a weekend or bank holiday.
+  - Ensure that sufficient time is provided for processing; for information on typical payment speeds and timelines, refer to the [Ramp Help Center](https://support.ramp.com/hc/en-us/articles/4417836454419-Bill-payment-methods-and-timelines).
+- These payment methods require a source bank account, which may be viewed via the [Entities API](/developer-api/v1/api/entities). Information on setting up bill pay accounts can be found in the [Ramp Help Center](https://support.ramp.com/hc/en-us/articles/4417760908435-Bill-Pay-set-up). 
+- Additional requirements differ by payment method:
+  - Non-check payments require a verified vendor bank account. Information on these accounts can be viewed via the Vendors API, using the Vendor Accounts endpoint.
+  - To make a check payment in the API, you must have configured an address for the vendor.
+
+## Bill Accounting
+
+### Accounting Coding
+
+- Accounting field options can be attached to the bill and to line items on the bill using the `accounting_field_selections` parameter. To add an accounting field option, pass the external (ERP) ID of the relevant accounting field and accounting field option as `field_external_id` and `field_option_external_id`, respectively.
+- More information on how to handle accounting for bills is available in the [Accounting Guide](/developer-api/v1/guides/accounting) and [Accounting API documentation](/developer-api/v1/api/accounting).
+
+### Syncing Bills to ERP
+
+- Bills are synced to ERPs (e.g., QuickBooks) automatically if a direct accounting connection is configured. Exports via Universal CSV are also supported in the Ramp dashboard, or via the [Accounting API](/developer-api/v1/api/accounting-sync).
+- Bills are synced to the accounting provider when they are in a sync-ready state. Query using `sync_ready: true` to identify bills that are ready to be synced. If using the accounting API, attempting to sync a bill that is not ready will error.
+  - A bill is ready to be synced when: 
+    - It is not deleted.
+    - It is either approved or created (depending on accounting settings).
+    - It has not yet been synced to the accounting provider.
+  - A bill payment is ready to be synced when:
+    - It is not deleted.
+    - It is fully paid.
+
+## Troubleshooting
+
+### Common Issues
+
+**"Bill is not sync-ready" Error**
+- **Cause**: Bill is missing required accounting fields or is in wrong state
+- **Solution**: Ensure bill is approved and has all required `accounting_field_selections`
+- **Check**: Use `sync_ready: true` filter to identify which bills are ready
+
+**"Payment method not supported" Error**
+- **Cause**: Selected payment method requires additional setup
+- **Solution**: Verify bank accounts are configured via [Entities API](/developer-api/v1/api/entities)
+- **Check**: Confirm vendor has required payment details (bank account for ACH, address for checks)
+
+**"Vendor not found" Error**
+- **Cause**: Referenced vendor_id doesn't exist or is archived
+- **Solution**: Create vendor first using [Vendors API](/developer-api/v1/api/vendors)
+- **Check**: Verify vendor is active and not deleted
+
+**Draft Bills Not Appearing**
+- **Cause**: Draft bills are only created through invoice upload, not API
+- **Solution**: Use regular Bills endpoints for programmatic bill creation
+- **Alternative**: Upload invoices via Ramp dashboard or email forwarding to create drafts
+
+### Best Practices
+
+1. **Always validate vendors exist** before creating bills
+2. **Use sync_ready filter** when building ERP integrations
+3. **Set proper payment arrival dates** accounting for processing time
+4. **Include accounting field selections** to ensure proper categorization
+5. **Handle webhook events** for real-time bill status updates
+
+## FAQs
+:::warning[Have questions? Reach out to us at developer-support@ramp.com]
+:::
+
+#### Are the Bill Pay endpoints stable for production use?
+Yes, all Bill Pay endpoints are stable and ready for production use.
+
+----
+
+#### Can I create draft bills via API?
+No, draft bills are only created through invoice upload (email forwarding, manual upload, bulk import). Use the regular Bills endpoints for programmatic bill creation.
+
+----
+
+#### How do I know when a bill is ready to sync to my ERP?
+Use the `sync_ready: true` query parameter when listing bills. This filters for bills that have all required accounting fields and are in the correct approval state.
+
+----
+
+#### What's the difference between Bills and Draft Bills?
+- **Bills**: Created via API, automatically approved, ready for payment
+- **Draft Bills**: Created via invoice upload, require manual verification before approval, read-only via API
+
+----
+
+#### Why can't I modify draft bills via API?
+Draft bills contain OCR-extracted data that requires human verification for accuracy. This manual review step ensures payment information is correct before approval.
+
+----
+
+#### What payment methods are supported?
+- **Card**: One-time virtual cards, existing Ramp cards, card delivery to vendor
+- **ACH**: Standard bank transfers (requires verified vendor bank account)
+- **Check**: Physical checks mailed to vendor (requires vendor address)
+- **Wire/SWIFT**: For domestic and international transfers
+
+----
+
+#### How do I handle bill approval workflows?
+Bills created via API are automatically approved and skip the approval process entirely. The API cannot trigger or manage approvals. For approval-related workflows, consider:
+- Using webhooks to monitor when draft bills (from invoice uploads) are approved manually
+- Building validation logic in your application before creating bills via API  
+- Tracking draft bills that require manual approval in the Ramp dashboard

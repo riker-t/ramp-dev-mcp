@@ -1,0 +1,26 @@
+---
+title: Debugging
+priority: 5
+---
+
+Ramp APIs will return an `x-trace-id` header in all API responses. The `x-trace-id` is particularly helpful for debugging, as it enables correlation between logs, metrics, and the API response, providing greater visibility into how the request was processed.
+
+## Usage
+
+- Include the `x-trace-id` when reaching out to Ramp support for quicker issue resolution.
+- Use the `x-trace-id` to track specific requests across different systems and identify potential bottlenecks or failures.
+- Make sure to log the `x-trace-id` in your application for easy reference in case you need to troubleshoot any API interactions.
+
+## Example
+
+Every API response includes the trace ID in the headers:
+
+```bash
+curl -I https://api.ramp.com/developer/v1/business \
+  -H "Authorization: Bearer $RAMP_API_TOKEN"
+
+# Response headers include:
+# x-trace-id: 1234567890abcdef1234567890abcdef
+```
+
+When contacting support, always include this trace ID for faster resolution.

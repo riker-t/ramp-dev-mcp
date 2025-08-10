@@ -1,0 +1,124 @@
+---
+title: Changelog
+slug: changelog
+priority: 2
+---
+
+import { ChangelogPage } from "../../components/Changelog";
+import {RyuBreak, RyuNotice} from '@ramp/ryu'
+
+
+
+<ChangelogPage
+announcements={[
+]}
+
+changelog={[
+  {
+  "date": new Date("2025-06-25"),
+  "title": "API Updates and Improvements",
+  "description": `
+- **Filter purchase orders by spend request timeframe** — Use \`spend_start_date\` and \`spend_end_date\` to retrieve POs tied to a specific spend window.  
+- **New endpoint: \`POST /reimbursement/mileage\`** — Log and submit mileage reimbursements via API.  
+- **Filter transactions by update timestamp** — \`GET /transactions\` now supports the \`updated_after\` filter for incremental syncs.  
+- **Search accounting vendors and GL accounts by \`remote_id\`** — Simplifies mapping to ERP systems.  
+- **Match bills to purchase orders** — Enables programmatic linkage between bills and POs.  
+- **Include \`is_manager\` in user invites** — Supports setting manager status when inviting a user via API.  
+- **Filter purchase orders by \`user_id\`** — Use \`GET /purchase-orders\` with \`user_id\` to retrieve POs submitted by a specific user.  
+- **\`accounting_date\` now returned in reimbursements** — Available via \`GET /reimbursements\` for improved reconciliation workflows.  
+- **New endpoint: \`POST /reimbursements/submit-receipt\`** — Attach receipts directly to reimbursements via API.  
+- **Auto-match uploaded receipts using OCR** — \`POST /receipts\` can now automatically associate receipts with matching transactions.  
+- **Temporary limit increases** — Use \`PATCH /limits/{limit_id}\` to implement temporary spending limit boosts.  
+- **Control declined transaction visibility** — \`GET /transactions\` now defaults to excluding declines. Use \`state=DECLINED\` or \`state=ALL\` to include them.  
+- **Search by accounting field selections** — Filter transactions and bills based on assigned accounting fields for better categorization.  
+- **Custom forms support** — Retrieve and manage custom form metadata on Vendors, Purchase Orders, Transactions, and Limits using \`GET\` endpoints.
+`
+}
+  ,
+  {
+    date: new Date('2025-05-16'),
+    title: "API Updates",
+    description: `
+- New endpoint \`POST /connection/<uuid:connection_id>/reactivate\`
+- Support for specifying \`display_name\` on \`POST /accounting/fields\`
+- New field \`card_present\` to \`GET /transactions\`
+- Filter by \`employee_id\` for \`GET /transactions\` and \`GET /reimbursements\`
+- Support for updating accounting custom field \`display_name\`
+- New field \`accounting_date\` to \`GET /bills\`
+- Support for requesting payment and tax details via email on \`POST /vendors\`
+- **Deprecated:** \`GET /accounting/connection\` in favor of \`GET /accounting/all-connections\`
+- Filter by \`awaiting_approval_by_user_id\` in \`GET /transactions\` and \`GET /reimbursements\``   
+  },
+  {
+    date: new Date('2025-04-29'),
+    title: "API Updates",
+    description: `
+- Support for creating vendors when approval policies are in place
+- Filter bills by \`payee_id\` and \`sync_status\` parameters
+- Support for managing vendor addresses via vendor APIs
+- Ability to specify \`employee_id\` on user creation
+- New fields \`status\` and \`last_linked_at\` to \`GET /accounting/connections\`
+- New field \`transaction_accounting_date\` to transactions APIs
+- Filter transactions by \`approval_status\` parameter
+- Filter accounting custom field options by \`remote_code\` parameter`   
+  },
+  {
+    date: new Date('2025-04-16'),
+    title: "Procurement API Beta (Ramp Plus Customers Only)",
+    description: `
+- **Beta:** Manage your Purchase Orders and Item Receipts for your procurement workflow
+- **Coming Soon:** Create Purchase Orders with optional three-way matching with Item Receipts
+- **Availability:** Currently available to Ramp Plus and Enterprise customers via white-glove rollout. Contact your Ramp representative for more information`   
+  },
+  {
+    date: new Date('2025-03-25'),
+    title: "Ramp MCP Server",
+    description: `
+- Ramp MCP Server enables developers to expose business data through an LLM-friendly SQL interface
+- Available as a Python package with support for custom tools, data loaders, and SQL execution
+- [View on GitHub](https://github.com/ramp-public/ramp-mcp)
+- [Read our blog post](https://engineering.ramp.com/post/ramp-mcp) for information on LLM-based reporting and automation`   
+  },
+  {
+    date: new Date('2025-03-17'),
+    title: "API Updates",
+    description: `
+- New \`sync_status\` field to Transactions, Reimbursements, Transfers, and Cashbacks for tracking sync state 
+- Filter with \`sync_status\` query parameter to retrieve records based on their sync state
+- Query Accounting Custom Fields and Options by \`remote_id\` parameter for easier external system mapping
+- Mark Accounting Custom Fields as \`required\` to enforce validation before sync-ready status`   
+  },
+  {
+    date: new Date('2025-02-25'),
+    title: "Custom Records Beta (Ramp Plus Customers Only)",
+    description: `
+- **Beta:** Add custom fields to users (e.g., Cost Center, Division, Custom Approvers) for advanced workflows
+- Define and manage custom or native tables via CSV, SCIM, or API
+- Query and update custom data via API for dynamic approvals and reporting
+- **Availability:** Currently available to Ramp Plus and Enterprise customers via white-glove rollout`   
+  },
+  {
+    date: new Date('2025-02-10'),
+    title: "Bank Account API",
+    description: `
+- New endpoint \`GET /developer/v1/bank-accounts/{bank_account_id}\` to retrieve linked bank account information`   
+  },
+  {
+    date: new Date('2025-01-17'),
+    title: "Bills and Vendors API Launch",
+    description: `
+- **New:** Manage vendors, bills, and payments via API for your Accounts Payable workflows
+- All endpoints are accessible in both Sandbox and Production environments
+- Support for creating, updating, deleting, and retrieving Vendors, Vendor Contacts, and Bills`   
+  },
+  {
+    date: new Date('2024-05-01'),
+    title: "Deprecation Notice: Cards API",
+    description: `
+- **Deprecated:** Ramp is transitioning from the Cards API to the more flexible Limits API
+- Use the Limits API for card issuance and management functionality
+- The Limits API enables one-to-many relationships between limits and cards and shared limits across users
+- Physical card shipping will continue to be supported via the Cards API until full migration support is provided`   
+  }
+]}
+/>

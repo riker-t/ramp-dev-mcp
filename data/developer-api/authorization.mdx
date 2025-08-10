@@ -1,0 +1,430 @@
+---
+title: Authorization
+priority: 3
+---
+
+import { MDXCodeBlocks } from '~/src/components/MDXCodeBlocks'
+import { RyuNotice, RyuImage, RyuBadge, RyuTableView } from '@ramp/ryu'
+import oauth_diagram from '~/src/assets/oauth_diagram.png'
+
+Ramp uses OAuth 2.0 for secure API access, providing granular permission control through scopes and supporting multiple authorization flows for different use cases.
+
+This guide covers the authorization framework in depth. For a quick start making your first API calls, see the [Getting Started Guide](/developer-api/v1/guides/getting-started).
+
+---
+
+## OAuth 2.0 Framework
+
+Ramp implements the OAuth 2.0 authorization framework with the following components:
+
+- **Resource Server**: Ramp's API endpoints that serve protected resources
+- **Authorization Server**: Ramp's OAuth service that issues access tokens
+- **Client**: Your application requesting access to Ramp resources
+- **Resource Owner**: The Ramp business granting access to their data
+
+### Supported Grant Types
+
+<RyuTableView columnTemplate='auto auto auto' textSize='m'>
+  <RyuTableView.thead>
+    <RyuTableView.tr>
+      <RyuTableView.th>Grant Type</RyuTableView.th>
+      <RyuTableView.th>Use Case</RyuTableView.th>
+      <RyuTableView.th>User Interaction</RyuTableView.th>
+    </RyuTableView.tr>
+  </RyuTableView.thead>
+  <RyuTableView.tbody>
+    <RyuTableView.tr>
+      <RyuTableView.td><strong>Client Credentials</strong></RyuTableView.td>
+      <RyuTableView.td>Internal integrations, server-to-server</RyuTableView.td>
+      <RyuTableView.td>None required</RyuTableView.td>
+    </RyuTableView.tr>
+    <RyuTableView.tr>
+      <RyuTableView.td><strong>Authorization Code</strong></RyuTableView.td>
+      <RyuTableView.td>Third-party apps, App Center listings</RyuTableView.td>
+      <RyuTableView.td>Admin consent required</RyuTableView.td>
+    </RyuTableView.tr>
+  </RyuTableView.tbody>
+</RyuTableView>
+
+---
+
+## Permission Model & Scopes
+
+Ramp's permission model uses OAuth 2.0 scopes to control access to different resources and operations. Each scope follows the pattern `resource:permission` where:
+
+- **resource**: The API resource (e.g., `transactions`, `bills`, `users`)
+- **permission**: The allowed operation (`read` or `write`)
+
+### Available Scopes
+
+<RyuTableView columnTemplate='auto auto auto' textSize='m'>
+  <RyuTableView.thead>
+    <RyuTableView.tr>
+      <RyuTableView.th>Scope</RyuTableView.th>
+      <RyuTableView.th>Resource</RyuTableView.th>
+      <RyuTableView.th>Description</RyuTableView.th>
+    </RyuTableView.tr>
+  </RyuTableView.thead>
+  <RyuTableView.tbody>
+    <RyuTableView.tr>
+      <RyuTableView.td><code>accounting:read</code></RyuTableView.td>
+      <RyuTableView.td>Accounting data</RyuTableView.td>
+      <RyuTableView.td>Access accounting sync status and metadata</RyuTableView.td>
+    </RyuTableView.tr>
+    <RyuTableView.tr>
+      <RyuTableView.td><code>accounting:write</code></RyuTableView.td>
+      <RyuTableView.td>Accounting data</RyuTableView.td>
+      <RyuTableView.td>Update accounting sync settings and connections</RyuTableView.td>
+    </RyuTableView.tr>
+    <RyuTableView.tr>
+      <RyuTableView.td><code>bank_accounts:read</code></RyuTableView.td>
+      <RyuTableView.td>Bank accounts</RyuTableView.td>
+      <RyuTableView.td>View connected bank account information</RyuTableView.td>
+    </RyuTableView.tr>
+    <RyuTableView.tr>
+      <RyuTableView.td><code>bills:read</code></RyuTableView.td>
+      <RyuTableView.td>Bills</RyuTableView.td>
+      <RyuTableView.td>Access bill data and payment history</RyuTableView.td>
+    </RyuTableView.tr>
+    <RyuTableView.tr>
+      <RyuTableView.td><code>bills:write</code></RyuTableView.td>
+      <RyuTableView.td>Bills</RyuTableView.td>
+      <RyuTableView.td>Create, update, and pay bills</RyuTableView.td>
+    </RyuTableView.tr>
+    <RyuTableView.tr>
+      <RyuTableView.td><code>business:read</code></RyuTableView.td>
+      <RyuTableView.td>Business profile</RyuTableView.td>
+      <RyuTableView.td>Access business information and settings</RyuTableView.td>
+    </RyuTableView.tr>
+    <RyuTableView.tr>
+      <RyuTableView.td><code>cards:read</code></RyuTableView.td>
+      <RyuTableView.td>Cards</RyuTableView.td>
+      <RyuTableView.td>View card information and spending limits</RyuTableView.td>
+    </RyuTableView.tr>
+    <RyuTableView.tr>
+      <RyuTableView.td><code>cards:read_vault</code></RyuTableView.td>
+      <RyuTableView.td>Card vault</RyuTableView.td>
+      <RyuTableView.td>Access sensitive card data (PAN, CVV)</RyuTableView.td>
+    </RyuTableView.tr>
+    <RyuTableView.tr>
+      <RyuTableView.td><code>cards:write</code></RyuTableView.td>
+      <RyuTableView.td>Cards</RyuTableView.td>
+      <RyuTableView.td>Create, update, and manage cards</RyuTableView.td>
+    </RyuTableView.tr>
+    <RyuTableView.tr>
+      <RyuTableView.td><code>cashbacks:read</code></RyuTableView.td>
+      <RyuTableView.td>Cashback rewards</RyuTableView.td>
+      <RyuTableView.td>View cashback earnings and history</RyuTableView.td>
+    </RyuTableView.tr>
+    <RyuTableView.tr>
+      <RyuTableView.td><code>custom_records:read</code></RyuTableView.td>
+      <RyuTableView.td>Custom records</RyuTableView.td>
+      <RyuTableView.td>Access custom data fields and records</RyuTableView.td>
+    </RyuTableView.tr>
+    <RyuTableView.tr>
+      <RyuTableView.td><code>custom_records:write</code></RyuTableView.td>
+      <RyuTableView.td>Custom records</RyuTableView.td>
+      <RyuTableView.td>Create and update custom data fields</RyuTableView.td>
+    </RyuTableView.tr>
+    <RyuTableView.tr>
+      <RyuTableView.td><code>departments:read</code></RyuTableView.td>
+      <RyuTableView.td>Departments</RyuTableView.td>
+      <RyuTableView.td>View department structure and assignments</RyuTableView.td>
+    </RyuTableView.tr>
+    <RyuTableView.tr>
+      <RyuTableView.td><code>departments:write</code></RyuTableView.td>
+      <RyuTableView.td>Departments</RyuTableView.td>
+      <RyuTableView.td>Create and manage departments</RyuTableView.td>
+    </RyuTableView.tr>
+    <RyuTableView.tr>
+      <RyuTableView.td><code>entities:read</code></RyuTableView.td>
+      <RyuTableView.td>Legal entities</RyuTableView.td>
+      <RyuTableView.td>Access entity information and hierarchies</RyuTableView.td>
+    </RyuTableView.tr>
+    <RyuTableView.tr>
+      <RyuTableView.td><code>item_receipts:read</code></RyuTableView.td>
+      <RyuTableView.td>Item receipts</RyuTableView.td>
+      <RyuTableView.td>View itemized receipt data</RyuTableView.td>
+    </RyuTableView.tr>
+    <RyuTableView.tr>
+      <RyuTableView.td><code>leads:read</code></RyuTableView.td>
+      <RyuTableView.td>Sales leads</RyuTableView.td>
+      <RyuTableView.td>Access lead and referral information</RyuTableView.td>
+    </RyuTableView.tr>
+    <RyuTableView.tr>
+      <RyuTableView.td><code>leads:write</code></RyuTableView.td>
+      <RyuTableView.td>Sales leads</RyuTableView.td>
+      <RyuTableView.td>Create and update lead information</RyuTableView.td>
+    </RyuTableView.tr>
+    <RyuTableView.tr>
+      <RyuTableView.td><code>limits:read</code></RyuTableView.td>
+      <RyuTableView.td>Spending limits</RyuTableView.td>
+      <RyuTableView.td>View spending limits and policies</RyuTableView.td>
+    </RyuTableView.tr>
+    <RyuTableView.tr>
+      <RyuTableView.td><code>limits:write</code></RyuTableView.td>
+      <RyuTableView.td>Spending limits</RyuTableView.td>
+      <RyuTableView.td>Create and modify spending limits</RyuTableView.td>
+    </RyuTableView.tr>
+    <RyuTableView.tr>
+      <RyuTableView.td><code>locations:read</code></RyuTableView.td>
+      <RyuTableView.td>Locations</RyuTableView.td>
+      <RyuTableView.td>View location data and assignments</RyuTableView.td>
+    </RyuTableView.tr>
+    <RyuTableView.tr>
+      <RyuTableView.td><code>locations:write</code></RyuTableView.td>
+      <RyuTableView.td>Locations</RyuTableView.td>
+      <RyuTableView.td>Create and manage location data</RyuTableView.td>
+    </RyuTableView.tr>
+    <RyuTableView.tr>
+      <RyuTableView.td><code>memos:read</code></RyuTableView.td>
+      <RyuTableView.td>Memos</RyuTableView.td>
+      <RyuTableView.td>Access transaction memos and notes</RyuTableView.td>
+    </RyuTableView.tr>
+    <RyuTableView.tr>
+      <RyuTableView.td><code>memos:write</code></RyuTableView.td>
+      <RyuTableView.td>Memos</RyuTableView.td>
+      <RyuTableView.td>Add and update transaction memos</RyuTableView.td>
+    </RyuTableView.tr>
+    <RyuTableView.tr>
+      <RyuTableView.td><code>merchants:read</code></RyuTableView.td>
+      <RyuTableView.td>Merchants</RyuTableView.td>
+      <RyuTableView.td>View merchant information and policies</RyuTableView.td>
+    </RyuTableView.tr>
+    <RyuTableView.tr>
+      <RyuTableView.td><code>purchase_orders:read</code></RyuTableView.td>
+      <RyuTableView.td>Purchase orders</RyuTableView.td>
+      <RyuTableView.td>Access purchase order data and status</RyuTableView.td>
+    </RyuTableView.tr>
+    <RyuTableView.tr>
+      <RyuTableView.td><code>receipt_integrations:read</code></RyuTableView.td>
+      <RyuTableView.td>Receipt integrations</RyuTableView.td>
+      <RyuTableView.td>View receipt integration settings</RyuTableView.td>
+    </RyuTableView.tr>
+    <RyuTableView.tr>
+      <RyuTableView.td><code>receipt_integrations:write</code></RyuTableView.td>
+      <RyuTableView.td>Receipt integrations</RyuTableView.td>
+      <RyuTableView.td>Configure receipt integration settings</RyuTableView.td>
+    </RyuTableView.tr>
+    <RyuTableView.tr>
+      <RyuTableView.td><code>receipts:read</code></RyuTableView.td>
+      <RyuTableView.td>Receipts</RyuTableView.td>
+      <RyuTableView.td>Access receipt images and data</RyuTableView.td>
+    </RyuTableView.tr>
+    <RyuTableView.tr>
+      <RyuTableView.td><code>receipts:write</code></RyuTableView.td>
+      <RyuTableView.td>Receipts</RyuTableView.td>
+      <RyuTableView.td>Upload and manage receipt data</RyuTableView.td>
+    </RyuTableView.tr>
+    <RyuTableView.tr>
+      <RyuTableView.td><code>reimbursements:read</code></RyuTableView.td>
+      <RyuTableView.td>Reimbursements</RyuTableView.td>
+      <RyuTableView.td>View reimbursement requests and status</RyuTableView.td>
+    </RyuTableView.tr>
+    <RyuTableView.tr>
+      <RyuTableView.td><code>spend_programs:read</code></RyuTableView.td>
+      <RyuTableView.td>Spend programs</RyuTableView.td>
+      <RyuTableView.td>Access spend program configuration</RyuTableView.td>
+    </RyuTableView.tr>
+    <RyuTableView.tr>
+      <RyuTableView.td><code>spend_programs:write</code></RyuTableView.td>
+      <RyuTableView.td>Spend programs</RyuTableView.td>
+      <RyuTableView.td>Create and manage spend programs</RyuTableView.td>
+    </RyuTableView.tr>
+    <RyuTableView.tr>
+      <RyuTableView.td><code>statements:read</code></RyuTableView.td>
+      <RyuTableView.td>Statements</RyuTableView.td>
+      <RyuTableView.td>Download monthly statements</RyuTableView.td>
+    </RyuTableView.tr>
+    <RyuTableView.tr>
+      <RyuTableView.td><code>transactions:read</code></RyuTableView.td>
+      <RyuTableView.td>Transactions</RyuTableView.td>
+      <RyuTableView.td>Access transaction data and history</RyuTableView.td>
+    </RyuTableView.tr>
+    <RyuTableView.tr>
+      <RyuTableView.td><code>transfers:read</code></RyuTableView.td>
+      <RyuTableView.td>Transfers</RyuTableView.td>
+      <RyuTableView.td>View transfer history and status</RyuTableView.td>
+    </RyuTableView.tr>
+    <RyuTableView.tr>
+      <RyuTableView.td><code>users:read</code></RyuTableView.td>
+      <RyuTableView.td>Users</RyuTableView.td>
+      <RyuTableView.td>Access user profiles and roles</RyuTableView.td>
+    </RyuTableView.tr>
+    <RyuTableView.tr>
+      <RyuTableView.td><code>users:write</code></RyuTableView.td>
+      <RyuTableView.td>Users</RyuTableView.td>
+      <RyuTableView.td>Create and manage user accounts</RyuTableView.td>
+    </RyuTableView.tr>
+    <RyuTableView.tr>
+      <RyuTableView.td><code>vendors:read</code></RyuTableView.td>
+      <RyuTableView.td>Vendors</RyuTableView.td>
+      <RyuTableView.td>View vendor information and payment details</RyuTableView.td>
+    </RyuTableView.tr>
+    <RyuTableView.tr>
+      <RyuTableView.td><code>vendors:write</code></RyuTableView.td>
+      <RyuTableView.td>Vendors</RyuTableView.td>
+      <RyuTableView.td>Create and update vendor information</RyuTableView.td>
+    </RyuTableView.tr>
+  </RyuTableView.tbody>
+</RyuTableView>
+
+### Scope Selection Guidelines
+
+When requesting scopes for your application:
+
+1. **Principle of Least Privilege**: Only request scopes your application actually needs
+2. **Read vs Write**: Start with read-only access and add write permissions as needed
+3. **Sensitive Data**: Scopes like `cards:read_vault` require additional security review
+4. **Related Resources**: Some operations may require multiple scopes (e.g., creating cards may need both `cards:write` and `users:read`)
+
+---
+
+## Token Management
+
+### Access Token Properties
+
+Access tokens issued by Ramp have the following characteristics:
+
+- **Format**: Opaque tokens (not JWT)
+- **Lifetime**: 10 days (864,000 seconds) for Client Credentials
+- **Scope Binding**: Tokens are bound to specific scopes and cannot be used beyond granted permissions
+- **Environment Isolation**: Tokens work only in the environment where they were issued
+
+### Token Security Best Practices
+
+<RyuNotice intent="warning" title="Token Security">
+Access tokens provide complete access to granted scopes. Treat them as credentials:
+- Never log tokens or include them in error messages
+- Store tokens encrypted at rest
+- Use HTTPS for all API communications
+- Implement token rotation for long-running applications
+- Monitor for unusual API usage patterns
+</RyuNotice>
+
+---
+
+## Authorization Flow Deep Dive
+
+### Client Credentials Flow
+
+Best for server-to-server integrations where no user interaction is required.
+
+**When to Use:**
+- Internal company integrations
+- Backend services accessing Ramp data
+- Automated workflows and data sync
+
+**Security Considerations:**
+- Client secret must be kept secure and never exposed in client-side code
+- Suitable for confidential clients (servers, not mobile apps or SPAs)
+- No user context - operates with the permissions of the app creator
+
+### Authorization Code Flow
+
+Required for third-party applications and App Center listings.
+
+<RyuImage src={oauth_diagram} />
+
+**When to Use:**
+- Third-party integrations
+- Multi-tenant applications
+- Apps requiring user-specific permissions
+
+**Security Considerations:**
+- Requires HTTPS redirect URIs
+- State parameter must be cryptographically random and verified
+- Authorization codes have short lifetimes (10 minutes)
+- Only Admin and Business Owner users can grant authorization
+
+---
+
+## Error Handling
+
+### Common Authorization Errors
+
+<RyuTableView columnTemplate='auto auto auto' textSize='m'>
+  <RyuTableView.thead>
+    <RyuTableView.tr>
+      <RyuTableView.th>Error Code</RyuTableView.th>
+      <RyuTableView.th>Description</RyuTableView.th>
+      <RyuTableView.th>Resolution</RyuTableView.th>
+    </RyuTableView.tr>
+  </RyuTableView.thead>
+  <RyuTableView.tbody>
+    <RyuTableView.tr>
+      <RyuTableView.td><code>invalid_client</code></RyuTableView.td>
+      <RyuTableView.td>Client authentication failed</RyuTableView.td>
+      <RyuTableView.td>Verify client ID and secret are correct</RyuTableView.td>
+    </RyuTableView.tr>
+    <RyuTableView.tr>
+      <RyuTableView.td><code>invalid_grant</code></RyuTableView.td>
+      <RyuTableView.td>Authorization code expired or invalid</RyuTableView.td>
+      <RyuTableView.td>Restart authorization flow with new code</RyuTableView.td>
+    </RyuTableView.tr>
+    <RyuTableView.tr>
+      <RyuTableView.td><code>invalid_scope</code></RyuTableView.td>
+      <RyuTableView.td>Requested scope not configured for app</RyuTableView.td>
+      <RyuTableView.td>Update app configuration or request different scopes</RyuTableView.td>
+    </RyuTableView.tr>
+    <RyuTableView.tr>
+      <RyuTableView.td><code>unauthorized_client</code></RyuTableView.td>
+      <RyuTableView.td>Grant type not enabled for this client</RyuTableView.td>
+      <RyuTableView.td>Enable required grant type in app settings</RyuTableView.td>
+    </RyuTableView.tr>
+    <RyuTableView.tr>
+      <RyuTableView.td><code>access_denied</code></RyuTableView.td>
+      <RyuTableView.td>User denied authorization request</RyuTableView.td>
+      <RyuTableView.td>User must approve access or contact admin</RyuTableView.td>
+    </RyuTableView.tr>
+  </RyuTableView.tbody>
+</RyuTableView>
+
+### API Authentication Errors
+
+When using access tokens with API endpoints:
+
+- **401 Unauthorized**: Token is missing, expired, or invalid
+- **403 Forbidden**: Token is valid but lacks required scope for the resource
+- **429 Too Many Requests**: Rate limit exceeded (see [Rate Limiting](/developer-api/v1/rate-limiting))
+
+---
+
+## FAQ
+
+:::warning[Questions? Contact us at developer-support@ramp.com]
+:::
+
+#### How do I know which scopes my app needs?
+
+Review the API endpoints your app will use. Each endpoint's documentation lists required scopes. Start with read-only scopes and add write permissions as needed.
+
+---
+
+#### Can I use the same app for both sandbox and production?
+
+No, each environment requires separate app configurations. Create one app in sandbox for testing and another in production for live usage.
+
+---
+
+#### Why can't regular users authorize my app?
+
+For security reasons, only users with Admin or Business Owner roles can grant OAuth2 permissions to third-party applications. This ensures proper oversight of data access.
+
+---
+
+#### How often should I refresh access tokens?
+
+Access tokens last 10 days. Implement refresh logic before expiration rather than waiting for 401 errors. For long-running applications, refresh tokens daily or when starting new sessions.
+
+---
+
+#### What happens if I request scopes my app isn't configured for?
+
+The authorization server will return an `invalid_scope` error. Configure all required scopes in your app settings before requesting them in authorization flows.
+
+---
+
+#### Can I modify scopes for existing access tokens?
+
+No, scopes are bound to tokens at issuance time. To change scopes, you must obtain a new access token with the updated scope configuration.

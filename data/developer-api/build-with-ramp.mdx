@@ -1,0 +1,139 @@
+---
+title: App Center
+priority: 1
+---
+
+import { RyuNotice, RyuLink, RyuTableView, RyuImage, RyuBreak, RyuText, RyuTimeline, RyuStages } from '@ramp/ryu'
+import { trackEvent } from '~/src/utils/trackEvent'
+import Listing from '~/src/assets/app-center-listing.jpg'
+
+# Ramp App Center
+
+Ramp's App Center is the home for trusted, high-quality apps that help businesses streamline their financial operations. Technology partners can build with the Ramp API to integrate directly into Ramp's ecosystem and unlock value for joint customers.
+
+## Why Build on Ramp?
+
+By building an app for Ramp, you can:
+- Enhance your product with real-time financial data
+- Expand your reach to a growing customer base
+- Strengthen customer retention through deeper integration
+
+---
+
+## App Listing Timeline
+
+<RyuStages
+  stages={[
+    {
+      title: 'Step 1: Request access',
+    },
+    {
+      title: 'Step 2: Build & test in sandbox',
+    },
+    {
+      title: 'Step 3: Apply for production access',
+    },
+    {
+      title: 'Step 4: Onboard customers',
+    },
+    {
+      title: 'Step 5: Apply for listing',
+    },
+  ]}
+/>
+
+---
+
+## 1. Request access
+
+Start by requesting access to build an app <RyuLink href='https://ramp.com/developer-api?utm_source=docs' onClick={() => trackEvent('Sandbox Link Clicked')}>here</RyuLink>. You’ll provide basic information about your company and use case. Once approved, you’ll receive:
+
+- A **sandbox account** for testing and development
+- Access to the **Developer Console**, where you can configure OAuth2 and submit required documentation
+
+---
+
+## 2. Build & test in sandbox
+
+Use our [Getting Started guide](/developer-api/v1/guides/getting-started) to connect to the Ramp API and begin developing your integration.
+
+Deliverables:
+- Working app in sandbox
+- Proper use of scopes and endpoints
+- OAuth2 flow implemented
+
+Ramp also offers [guides for common use cases](/developer-api/v1/guides/) such as:
+- [Accounting Integrations](/developer-api/v1/guides/accounting)
+- [Bill Pay Integrations](/developer-api/v1/guides/bill-pay)
+
+Need help? Email us at **developer-support@ramp.com**.
+
+---
+
+## 3. Apply for production access
+
+Production access allows your app to connect to real Ramp customers via [OAuth2](/developer-api/v1/guides/getting-started#-authorization-code-for-multi-customer-apps).
+
+What to submit in Developer Console:
+- A description of your integration
+- A demo (OAuth2 flow, data flows, UI/UX)
+- Requested API scopes
+- Security certifications (SOC 2 Type 2, ISO 27001, etc.)
+- Data access policies and storage practices
+
+Ramp will review your submission and contact you with approval or follow-up questions.
+
+Security best practices to follow:
+- Encrypt sensitive data in transit and at rest
+- Use MFA and least-privilege access
+- Maintain patching, monitoring, and secure backups
+- Provide clear data handling and retention documentation
+
+---
+
+## 4. Onboard customers in production
+
+Once approved, begin using OAuth2 to onboard real customers to your app. **Important**: Ensure your customers understand that only users with Admin or Business Owner roles can authorize your application.
+
+Usage requirements to qualify for listing:
+- At least **3 active customers using each requested scope**
+- Error rate below 10% per scope
+
+---
+
+## 5. Apply for listing
+
+When you meet the usage threshold, submit your listing request via the Developer Console along with the required assets and demo credentials. Once approved, your app will be featured in our in-product App Center and on our website at [ramp.com/integrations](https://www.ramp.com/integrations)
+
+**Usage requirements**
+- 3+ production customers per API scope
+- Error rate below 10% per scope
+
+**Marketing assets**
+- Public app description
+- Logo (1024x1024px, 1:1)
+- Landing page image (16:10, min 800px)
+
+**Support & testing**
+- Links to your Website, Privacy Policy, and Terms of Service
+- A hosted setup guide with clear usage instructions
+- A support alias with clear escalation paths and response expectations
+- A functioning demo environment with test credentials Ramp can use to QA data flows
+
+### Additional requirements (accounting integrations only)
+
+- Description of your [migration](/developer-api/v1/guides/accounting#migration) process
+- A demo video of successful [sync behavior](/developer-api/v1/guides/accounting#object-sync)
+- Mapping of how Ramp objects correspond to objects in the external accounting system (EG. Transactions, Reimbursements, Bills, etc)
+
+Ramp reserves the right to revoke a listed App at any time if requirements are no longer met. This includes lack of support materials, broken demo environments, or degradation of production functionality. Continued listing depends on maintaining a high-quality experience for Ramp customers.
+
+---
+
+## Example App Listing
+
+<RyuImage src={Listing} />
+<RyuBreak />
+<RyuText.p color='hushed' align='center'>Example App Center listing</RyuText.p>
+
+---

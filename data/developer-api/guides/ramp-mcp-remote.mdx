@@ -1,0 +1,299 @@
+---
+title: Ramp MCP
+priority: 2
+---
+
+import { RyuNotice } from '@ramp/ryu'
+import { MDXCodeBlocks } from '~/src/components/MDXCodeBlocks'
+
+<RyuNotice title="Ramp MCP Remote is in Beta" color='warning' iconType='bell'>
+Ramp MCP Remote is subject to change. Feedback and questions can be sent to developer-support@ramp.com.
+</RyuNotice>
+
+## Overview
+
+Ramp MCP Remote is a secure, cloud-hosted service that enables AI assistants (like Claude or ChatGPT) to analyze your Ramp financial data using natural language queries. Using the [Model Context Protocol (MCP)](https://modelcontextprotocol.io/introduction), it provides a seamless bridge between your Ramp data and AI tools.
+
+**What you can ask:**
+- "Show me our top 10 vendors by spend last quarter"
+- "Which departments exceeded their budgets this month?"
+- "Analyze our travel expenses by employee and location"
+- "Find all pending bills over $10,000"
+
+> **Looking for a local MCP version?** Check out [Ramp MCP Local](https://github.com/ramp-public/ramp_mcp) on GitHub for an open-source local MCP server.
+
+<RyuNotice type="warning">
+**Connection Note:** Remote MCP connections are early technology and may require multiple attempts. If authentication fails, restart your client and try again.
+</RyuNotice>
+
+---
+
+## Environment Selection
+
+⚠️ **Important:** We recommend using only one environment at a time.
+
+- **Production:** `https://ramp-mcp-remote.ramp.com/mcp` - Live Ramp data
+- **Demo:** `https://demo-ramp-mcp-remote.ramp.com/mcp` - Sample data for testing
+
+---
+
+## Setup Instructions
+
+### Prerequisites
+
+1. **Ramp Account**: Active Ramp account with admin-level access
+2. **Compatible Client**: Claude Desktop, Claude Code, Cursor, or other MCP-compatible client
+
+### Claude Code
+
+<MDXCodeBlocks title="Add MCP server to Claude config">
+```bash
+# Production (live data)
+claude mcp add --transport sse ramp-server https://ramp-mcp-remote.ramp.com/mcp
+
+# Demo (sample data)
+claude mcp add --transport sse ramp-demo-server https://demo-ramp-mcp-remote.ramp.com/mcp
+```
+</MDXCodeBlocks>
+
+**Authentication:**
+1. Run `/mcp` in your Claude Code session to start authentication flow
+2. Complete OAuth login when browser opens
+3. Start asking questions about your Ramp data
+
+### Claude Desktop
+
+**Configuration file location:**
+- **macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
+- **Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
+
+**Setup steps:**
+
+1. **Install Node.js** (if not already installed):
+   - **macOS:** `brew install node` 
+   - **Windows:** Download from [nodejs.org](https://nodejs.org)
+
+2. **Open your configuration file:**
+   - **macOS:** Open Finder → Press 'Go' → 'Go to folder' → Enter the macOS path above
+   - **Windows:** Use the Windows path above in File Explorer
+
+3. **Add to your configuration file:**
+
+<MDXCodeBlocks title="Claude Desktop Configuration">
+```json
+{
+  "mcpServers": {
+    "ramp-mcp": {
+      "command": "npx",
+      "args": ["mcp-remote", "https://ramp-mcp-remote.ramp.com/mcp", "3334"]
+    }
+  }
+}
+```
+</MDXCodeBlocks>
+
+**For the demo environment, use:**
+```json
+"args": ["mcp-remote", "https://demo-ramp-mcp-remote.ramp.com/mcp", "3334"]
+```
+
+4. **Restart Claude Desktop** - Authentication will start automatically
+
+### Cursor
+
+**Configuration file location:**
+- `~/.cursor/mcp.json`
+
+**Setup steps:**
+
+1. **Open your configuration file:**
+   - **macOS:** Open Finder → Press 'Go' → 'Go to folder' → Enter `~/.cursor/mcp.json`
+   - **Windows:** Navigate to `%USERPROFILE%\.cursor\mcp.json` in File Explorer
+   - **Create the file if it doesn't exist**
+
+2. **Add to your configuration file:**
+
+<MDXCodeBlocks title="Cursor Configuration">
+```json
+{
+  "mcpServers": {
+    "ramp-mcp-remote": {
+      "url": "https://ramp-mcp-remote.ramp.com/mcp"
+    }
+  }
+}
+```
+</MDXCodeBlocks>
+
+**For the demo environment:**
+```json
+{
+  "mcpServers": {
+    "demo-ramp-mcp-remote": {
+      "url": "https://demo-ramp-mcp-remote.ramp.com/mcp"
+    }
+  }
+}
+```
+
+### Other MCP Clients
+
+For clients supporting remote MCP connections, use these endpoints:
+- **Production:** `https://ramp-mcp-remote.ramp.com/mcp`
+- **Demo:** `https://demo-ramp-mcp-remote.ramp.com/mcp`
+
+Refer to your client's MCP documentation for specific configuration steps.
+
+---
+
+## Getting Started
+
+### Authentication & Setup
+
+1. **Configure your client** using the setup instructions above
+2. **Restart your client** after making configuration changes
+3. **Authenticate with Ramp** - a browser window opens automatically for OAuth login
+4. **Authorize permissions** for the data types you want to analyze
+5. **Start asking questions** about your Ramp data
+
+**Note:** Authentication happens automatically - you don't need to create OAuth applications or manage credentials.
+
+---
+
+## Troubleshooting
+
+### Connection Issues
+
+**Authentication fails or connection drops:**
+- Restart your client and try connecting again
+- Clear MCP authentication: `rm -rf ~/.mcp-auth` (if applicable)
+- Ensure you're logged into the correct Ramp account
+
+**"ETL operation limit reached":**
+- Wait for current data operations to complete
+- Ask the AI to clear unused tables to free up resources
+
+**"Query returned more than 100 rows":**
+- The AI will automatically add more specific filters and retry
+
+### Common Setup Issues
+
+**Configuration not working:**
+- Verify JSON syntax in configuration files
+- Ensure file paths are correct for your operating system
+- Restart your client after making configuration changes
+
+**Node.js or npm issues:**
+- Ensure Node.js is properly installed
+- Try `npm install -g mcp-remote` to install the required package
+
+### Getting Help
+
+- **Technical Support:** developer-support@ramp.com
+- **API Documentation:** [Ramp Developer Docs](https://docs.ramp.com/developer-api)
+- **MCP Protocol:** [Model Context Protocol](https://modelcontextprotocol.io/introduction)
+
+---
+
+## Available Tools
+
+### Database Tools
+
+Tools the AI uses to query and manage data after it's loaded:
+
+1. **`execute_query`** - The AI runs SQL queries on loaded data
+2. **`clear_table`** - The AI clears specific tables from memory
+
+### Data Loading Tools
+
+Tools the AI can use to load different types of Ramp data for analysis. All data loading happens asynchronously - the AI receives confirmation that loading has started and the tool will give status updates until data is ready to query.
+
+| Tool | Description | Required Scope |
+| -------------------------- | ---------------------------------------------------------------------------------------- | -------------------------------------------------------- |
+| **`load_spend_export`** | **Recommended**: Load comprehensive spend data (transactions, reimbursements, and bills) | `transactions:read`, `reimbursements:read`, `bills:read` |
+| **`load_purchase_orders`** | Load purchase order data | `purchase_orders:read` |
+| **`load_cards`** | Load card information | `cards:read` |
+| **`load_limits`** | Load spending limit data | `limits:read` |
+| **`load_entities`** | Load entity information | `entities:read` |
+| **`load_departments`** | Load department data | `departments:read` |
+| **`load_users`** | Load user/employee data | `users:read` |
+| **`load_memos`** | Load memo data | `memos:read` |
+| **`load_locations`** | Load office location data | `locations:read` |
+| **`load_spend_programs`** | Load spend program data | `spend_programs:read` |
+| **`load_vendors`** | Load vendor information | `vendors:read` |
+
+**Note:** Loading data into an existing table will replace all previously loaded data in that table
+
+### Utility Tools
+
+1. **`get_ramp_categories`** - Get all available Ramp spending categories (includes 40+ categories like Airlines, Restaurants, Office Supplies, etc.)
+2. **`get_current_user`** - Get the current user's information (email, name, etc.)
+3. **`submit_feedback`** - Allow the AI to submit feedback to Ramp about the MCP server interface or problems it runs into
+
+---
+
+## Usage Examples
+
+### Analyzing Recent Spending
+
+```
+You: "What were our top expenses last month?"
+Assistant: I'll analyze your expenses from last month. Let me load the necessary data.
+
+[Behind the scenes: The AI loads transaction data from the previous month]
+Loading data into table 'transactions' asynchronously...
+
+Once the data is available, I'll run a query to identify your top expenses:
+
+[The AI executes: SELECT merchant_name, SUM(amount) as total_spend FROM transactions
+GROUP BY merchant_name ORDER BY total_spend DESC LIMIT 10]
+
+Here are your top 10 expenses last month:
+1. AWS Services - $45,230
+2. Google Workspace - $12,500
+3. Salesforce - $11,200
+[... continued results]
+```
+
+### Department Budget Analysis
+
+```
+You: "Are any departments overspending this quarter?"
+Assistant: I'll check department spending against budgets for this quarter.
+
+[Behind the scenes: The AI loads multiple data sources]
+- Loading transaction data for Q4 2024
+- Loading department information
+- Loading spending limits
+
+Now I'll analyze spending by department:
+
+[The AI monitors loading progress and runs queries once data is ready]
+
+Based on my analysis:
+- Marketing has spent $125,000 (104% of quarterly budget)
+- Engineering is at $210,000 (87% of budget)
+- Sales is at $95,000 (118% of budget - over by $14,000)
+```
+
+### Employee Spending Patterns
+
+```
+You: "I'm concerned about unusual employee expenses. Can you identify any outliers?"
+Assistant: I'll analyze employee spending patterns to identify any unusual activity.
+
+[Behind the scenes: The AI determines what data is needed]
+- Loading user data
+- Loading transaction data from the past 90 days
+- Loading reimbursements
+
+I'll now analyze spending patterns to find outliers:
+
+[The AI runs statistical queries to identify unusual patterns]
+
+I've identified some unusual patterns:
+1. Employee John Smith had 15 restaurant charges totaling $3,200 last week (typical weekly average is $200)
+2. Three employees submitted reimbursements over $5,000 (90th percentile is usually $1,500)
+3. Unusual merchant category: "Casino" appeared 3 times for Employee Jane Doe
+```
+

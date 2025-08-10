@@ -1,0 +1,31 @@
+---
+title: Rate Limiting
+priority: 4
+---
+
+To ensure reliable and equitable access to our API, we enforce rate limiting. By default, API requests are limited as follows:
+
+- **Limit:** 200 requests per 10-second rolling window.
+- **Reset Mechanism:** The window operates on a rolling basis, meaning every new request resets the 10-second timer for that particular request.
+
+When the rate limit is exceeded, the API responds with a **429 Too Many Requests** status code. This indicates that further requests should be paused until the limit resets.
+
+## Tips for Handling Rate Limits
+
+- **Implement Backoff Strategies:** When receiving a `429 Too Many Requests` response:
+  - Implement exponential backoff (e.g., 1s, 2s, 4s) before retrying.
+  - Avoid immediate retries, as this could worsen delays.
+- **Optimize API Calls:** Consolidate requests wherever possible, such as using batch endpoints or minimizing redundant calls.
+
+## Example Scenario
+
+If you make 200 requests at `10:00:00`, the limit will be reached, and subsequent requests will return a `429` response. If no further requests are made, the limit will reset by `10:00:10`. However, if you continue making requests during the window, the rolling timer will extend accordingly.
+
+## Requesting Higher Limits
+
+If your application requires a higher limit, you can request an increase. To do so:
+
+1. Analyze and document your expected API usage.
+2. Contact developer-support@ramp.com with your account details and usage requirements.
+
+Providing clear information about your use case and anticipated volume will help expedite the review process.
