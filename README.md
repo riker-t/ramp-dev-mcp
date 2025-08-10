@@ -82,6 +82,8 @@ The server includes comprehensive documentation for:
    - **Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
 
 2. **Add the server configuration:**
+
+   **Option 1: Simple configuration (if `uv` is in your PATH):**
    ```json
    {
      "mcpServers": {
@@ -94,7 +96,28 @@ The server includes comprehensive documentation for:
    }
    ```
    
-   Replace `/path/to/ramp-dev-mcp` with the actual path where you cloned the repository.
+   **Option 2: Full path configuration (recommended):**
+   ```json
+   {
+     "mcpServers": {
+       "ramp-developer": {
+         "command": "/Users/yourusername/.local/bin/uv",
+         "args": [
+           "--directory",
+           "/path/to/ramp-dev-mcp",
+           "run",
+           "src/server.py"
+         ]
+       }
+     }
+   }
+   ```
+   
+   **Configuration notes:**
+   - Replace `/path/to/ramp-dev-mcp` with the actual path where you cloned the repository
+   - Replace `/Users/yourusername/.local/bin/uv` with your actual `uv` installation path
+   - To find your `uv` path, run: `which uv` in your terminal
+   - If `uv` is not in your PATH, use the full path configuration
 
 3. **Restart Claude Desktop**
 
