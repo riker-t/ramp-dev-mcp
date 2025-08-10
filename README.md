@@ -2,6 +2,10 @@
 
 A local Model Context Protocol (MCP) server that provides AI assistants with access to Ramp's developer documentation, API schemas, and development guidance. This server enables natural language queries about Ramp's API endpoints, authentication methods, data relationships, and implementation patterns. Built specifically for developers building on Ramp's platform, it serves as an intelligent companion for API integration and development workflows. The server runs locally and processes Ramp's comprehensive developer documentation to provide contextual, accurate responses about API usage and best practices.
 
+<a href="https://glama.ai/mcp/servers/@riker-t/ramp-dev-mcp">
+  <img width="380" height="200" src="https://glama.ai/mcp/servers/@riker-t/ramp-dev-mcp/badge" alt="Ramp Developer Server MCP server" />
+</a>
+
 ## Example Queries and Use Cases
 
 ### API Development
