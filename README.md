@@ -83,20 +83,7 @@ The server includes comprehensive documentation for:
 
 2. **Add the server configuration:**
 
-   **Option 1: Simple configuration (if `uv` is in your PATH):**
-   ```json
-   {
-     "mcpServers": {
-       "ramp-developer": {
-         "command": "uv",
-         "args": ["run", "python", "src/server.py"],
-         "cwd": "/path/to/ramp-dev-mcp"
-       }
-     }
-   }
-   ```
-   
-   **Option 2: Full path configuration (recommended):**
+   **Option 1: Full path configuration (recommended):**
    ```json
    {
      "mcpServers": {
@@ -108,6 +95,19 @@ The server includes comprehensive documentation for:
            "run",
            "src/server.py"
          ]
+       }
+     }
+   }
+   ```
+   
+   **Option 2: Simple configuration (if `uv` is in your PATH):**
+   ```json
+   {
+     "mcpServers": {
+       "ramp-developer": {
+         "command": "uv",
+         "args": ["run", "python", "src/server.py"],
+         "cwd": "/path/to/ramp-dev-mcp"
        }
      }
    }
